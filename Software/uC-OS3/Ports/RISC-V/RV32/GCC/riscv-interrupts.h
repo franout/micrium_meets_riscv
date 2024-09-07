@@ -59,7 +59,7 @@ enum {
     RISCV_INT_MSI_CODE=3,/*software triggere interrupt*/
 };
 
-void riscv_irq_handler(void)  __attribute__ ((interrupt ("machine")));
+void riscv_irq_handler(void); 
 
 
 #endif /* RISCV_INTERRUPTS_H */

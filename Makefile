@@ -16,14 +16,14 @@ OBJECTS   := $(patsubst $(SRCDIR)/%,$(BUILDDIR)/%,$(addsuffix .o,$(basename $(SO
 DEPS      := $(patsubst $(SRCDIR)/%,$(BUILDDIR)/%,$(addsuffix .d,$(basename $(SOURCES))))
 
 
-CFLAGS :=  $(OPTIMIZATION_FLAGS) -mcmodel=medlow -march=$(RISCV_ISA) -mabi=$(RISCV_ABI)  -static -lc -Wall -Wextra   -L$$CC_INSTALLATION_PATH/lib   --entry=_start --static   -fno-exceptions -fPIC
-LDFLAG :=  $(OPTIMIZATION_FLAGS)    -Wl,-Map=$(BUILDDIR)/$(program).map,--cref,--no-warn-mismatch -lc -T ./Software/generic/RISCV-platform/linker.ld -Xlinker --defsym=__stack_size=0xA00 -Wl,--entry=_start --static -fno-exceptions -fPIC 
+CFLAGS :=  $(OPTIMIZATION_FLAGS) -mcmodel=medlow -march=$(RISCV_ISA) -mabi=$(RISCV_ABI)  -static -lc -Wall -Wextra   -L$$CC_INSTALLATION_PATH/lib   -nostartfiles --entry=_start --static   -fno-exceptions -fPIC
+LDFLAG :=  $(OPTIMIZATION_FLAGS)    -Wl,-Map=$(BUILDDIR)/$(program).map,--cref,--no-warn-mismatch -lc -T ./Software/generic/RISCV-platform/linker.ld -nostartfiles  -Xlinker --defsym=__stack_size=0xA00 -Wl,--entry=_start --static -fno-exceptions -fPIC 
 CXXFLAGS := $(OPTIMIZATION_FLAGS) -Wall -Wextra 
 COBJFLAGS := $(CFLAGS) -c
 
 
 ## verbsely add includes 
-INC       := -I$(SRCDIR)/generic/CSP/Comet/ -I$(SRCDIR)/uC-CPU/ -I$(SRCDIR)/uC-CPU/RISC-V/GCC/ -I$(SRCDIR)/generic/generic/riscv32/micrium_meets_bernina/application/ -I$(SRCDIR)/generic/generic/riscv32/micrium_meets_bernina/Cfg/ -I$(SRCDIR)/generic/generic/riscv32/micrium_meets_bernina/ -I$(SRCDIR)/uC-Clk/Cfg/ -I$(SRCDIR)/uC-Clk/Source/ -I$(SRCDIR)/uC-CPU/Cfg/  -I$(SRCDIR)/uC-LIB/Cfg/ -I$(SRCDIR)/uC-LIB/ -I$(SRCDIR)/uC-OS3/Cfg/ -I$(SRCDIR)/uC-OS3/Ports/RISC-V/RV32/GCC/ -I$(SRCDIR)/uC-OS3/Source/ -I./Software/generic/RISCV-platform/
+INC       := -I$(SRCDIR)/generic/CSP/Comet/ -I$(SRCDIR)/uC-CPU/ -I$(SRCDIR)/uC-CPU/RISC-V/GCC/ -I$(SRCDIR)/generic/generic/riscv32/micrium_meets_riscv/application/ -I$(SRCDIR)/generic/generic/riscv32/micrium_meets_riscv/Cfg/ -I$(SRCDIR)/generic/generic/riscv32/micrium_meets_riscv/ -I$(SRCDIR)/uC-Clk/Cfg/ -I$(SRCDIR)/uC-Clk/Source/ -I$(SRCDIR)/uC-CPU/Cfg/  -I$(SRCDIR)/uC-LIB/Cfg/ -I$(SRCDIR)/uC-LIB/ -I$(SRCDIR)/uC-OS3/Cfg/ -I$(SRCDIR)/uC-OS3/Ports/RISC-V/RV32/GCC/ -I$(SRCDIR)/uC-OS3/Source/ -I./Software/generic/RISCV-platform/
 
 
 all: debug

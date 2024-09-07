@@ -30,6 +30,8 @@
 
     .global  CPU_SR_Save
     .global  CPU_SR_Restore
+    .global  CPU_get_sp
+    .global  CPU_get_gp
 
 
 
@@ -78,8 +80,8 @@ CPU_SR_Save:
 # Save the Machine status register
     csrr   a0, mstatus
 # Disable global interupt
-    li     t0, CPU_MSTATUS_MIE
-    csrrc  zero, mstatus, t0
+#    li     t0, CPU_MSTATUS_MIE
+#    csrrc  zero, mstatus, t0
     ret
 
 
@@ -88,6 +90,13 @@ CPU_SR_Restore:
     csrw   mstatus, a0
     ret
 
+CPU_get_gp:
+    mv a0, gp
+    ret
+
+CPU_get_sp:
+    mv a0, sp
+    ret
 
 #********************************************************************************************************
 #                                     CPU ASSEMBLY PORT FILE END

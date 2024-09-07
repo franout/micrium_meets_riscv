@@ -392,6 +392,10 @@ CPU_SR  CPU_SR_Save   (void);                                   /* Save    CPU s
 void    CPU_SR_Restore(CPU_SR  cpu_sr);                         /* Restore CPU status word.                             */
 
 
+CPU_ADDR  CPU_get_sp(void);          
+CPU_ADDR  CPU_get_gp(void);
+
+
 /*
 *********************************************************************************************************
 *                                        CONFIGURATION ERRORS

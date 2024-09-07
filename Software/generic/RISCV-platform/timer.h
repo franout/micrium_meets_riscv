@@ -10,13 +10,14 @@
 #define TIMER_H
 
 #include <stdint.h>
+#include "os_cfg_app.h"
 
 #define RISCV_MTIMECMP_ADDR (0x100)
 #define RISCV_MTIME_ADDR    (0x10)
 
 #ifndef MTIME_FREQ_HZ
 // fake Timer  board
-#define MTIME_FREQ_HZ 100000000
+#define MTIME_FREQ_HZ OS_CFG_TICK_RATE_HZ
 #endif
 
 #define MTIMER_SECONDS_TO_CLOCKS(SEC)           \
