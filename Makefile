@@ -16,8 +16,8 @@ OBJECTS   := $(patsubst $(SRCDIR)/%,$(BUILDDIR)/%,$(addsuffix .o,$(basename $(SO
 DEPS      := $(patsubst $(SRCDIR)/%,$(BUILDDIR)/%,$(addsuffix .d,$(basename $(SOURCES))))
 
 
-CFLAGS :=  $(OPTIMIZATION_FLAGS) -mcmodel=medlow -march=$(RISCV_ISA) -mabi=$(RISCV_ABI)  -static -lc -Wall -Wextra   -L$$CC_INSTALLATION_PATH/lib   -nostartfiles --entry=_start --static   -fno-exceptions -fPIC
-LDFLAG :=  $(OPTIMIZATION_FLAGS)    -Wl,-Map=$(BUILDDIR)/$(program).map,--cref,--no-warn-mismatch -lc -T ./Software/generic/RISCV-platform/linker.ld -nostartfiles  -Xlinker --defsym=__stack_size=0xA00 -Wl,--entry=_start --static -fno-exceptions -fPIC 
+CFLAGS :=  $(OPTIMIZATION_FLAGS) -mcmodel=medlow -march=$(RISCV_ISA) -mabi=$(RISCV_ABI)  -static -lc -Wall -Wextra   -L$$CC_INSTALLATION_PATH/lib   -nostartfiles --entry=_start --static   -fno-exceptions -fPIC -falign-functions=16
+LDFLAG :=  $(OPTIMIZATION_FLAGS)    -Wl,-Map=./$(program).map,--cref,--no-warn-mismatch -lc -T ./Software/generic/RISCV-platform/linker.ld -nostartfiles  -Xlinker --defsym=__stack_size=0xA00 -Wl,--entry=_start --static -fno-exceptions -fPIC 
 CXXFLAGS := $(OPTIMIZATION_FLAGS) -Wall -Wextra 
 COBJFLAGS := $(CFLAGS) -c
 
