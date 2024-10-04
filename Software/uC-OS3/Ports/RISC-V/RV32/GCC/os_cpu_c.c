@@ -45,6 +45,9 @@ const CPU_CHAR *os_cpu_c__c = "$Id: $";
 
 #ifdef __COMET_SIMULATOR__
 #include <stdlib.h>
+
+/* currently, Comet breaks on ecall*/
+#define END() 		do { asm volatile ("ecall"); }while(0)
 #endif /*__COMET_SIMULATOR__*/
 
 #include "cpu.h"
@@ -119,7 +122,7 @@ const CPU_CHAR *os_cpu_c__c = "$Id: $";
 		asm volatile("sw     x14,  12 * 4(sp)");                                                                       \
 		asm volatile("sw     x13,  11 * 4(sp)");                                                                       \
 		asm volatile("sw     x12,  10 * 4(sp)");                                                                       \
-		asm volatile("sw     x11,  9 * 4(sp)");                                                                       \
+		asm volatile("sw     x11,  9 * 4(sp)");                                                                        \
 		asm volatile("sw     x10,  8 * 4(sp)");                                                                        \
 		asm volatile("sw     x9,   7 * 4(sp)");                                                                        \
 		asm volatile("sw     x8,   6 * 4(sp)");                                                                        \
@@ -129,9 +132,7 @@ const CPU_CHAR *os_cpu_c__c = "$Id: $";
 		asm volatile("sw     x4,   2 * 4(sp)");                                                                        \
 		asm volatile("sw     x3,   1 * 4(sp)");                                                                        \
 		asm volatile("sw     x1,   0 * 4(sp)");                                                                        \
-		asm volatile("csrrs  x0,mstatus,x30");                                                                             \
-		asm volatile("sw   x30, 30 *4 (sp)");                                                                          \
-		asm volatile("csrrs   x0,mepc,x31");                                                                             \
+		asm volatile("csrr   x31,mepc");                                                                               \
 		asm volatile("sw     x31,    31*4(sp)");                                                                       \
 	} while (0)
 
@@ -139,9 +140,7 @@ const CPU_CHAR *os_cpu_c__c = "$Id: $";
 	do                                                                                                                 \
 	{                                                                                                                  \
 		asm volatile("lw     x31,    31*4(sp)");                                                                       \
-		asm volatile("csrrw  x31, mepc, x31");                                                                          \
-		asm volatile("lw     x30,    30*4(sp)");                                                                       \
-		asm volatile("csrrw  x30, mstatus, x30");                                                                       \
+		asm volatile("csrw  mepc,x31 ");                                                                               \
 		asm volatile("lw     x1,   0* 4(sp)");                                                                         \
 		asm volatile("lw     x3,   1 * 4(sp)");                                                                        \
 		asm volatile("lw     x4,   2 * 4(sp)");                                                                        \
@@ -151,7 +150,7 @@ const CPU_CHAR *os_cpu_c__c = "$Id: $";
 		asm volatile("lw     x8,   6 * 4(sp)");                                                                        \
 		asm volatile("lw     x9,   7 * 4(sp)");                                                                        \
 		asm volatile("lw     x10,  8 * 4(sp)");                                                                        \
-		asm volatile("lw     x11,  9 * 4(sp)");                                                                       \
+		asm volatile("lw     x11,  9 * 4(sp)");                                                                        \
 		asm volatile("lw     x12,  10 * 4(sp)");                                                                       \
 		asm volatile("lw     x13,  11 * 4(sp)");                                                                       \
 		asm volatile("lw     x14,  12 * 4(sp)");                                                                       \
@@ -203,6 +202,21 @@ extern "C"
 
 	void OSIdleTaskHook(void)
 	{
+
+#ifdef __COMET_SIMULATOR__
+	CPU_IntDis();
+	volatile CPU_INT32U counter = 0;
+	counter++;
+	if (counter >= MAX_HYPERPERIOD_REPS)
+	{	
+		
+		PRINT_END();
+		END();
+	}
+	
+	CPU_IntEn();
+#endif /*__COMET_SIMULATOR__*/
+
 #if OS_CFG_APP_HOOKS_EN > 0u
 		if (OS_AppIdleTaskHookPtr != (OS_APP_HOOK_VOID)0)
 		{
@@ -210,17 +224,6 @@ extern "C"
 		}
 #endif
 
-#ifdef __COMET_SIMULATOR__
-		static CPU_INT32U counter = 0;
-
-		if (counter > MAX_HYPERPERIOD_REPS)
-		{
-			PRINT_END();
-			exit(0);
-		}
-		counter++;
-
-#endif /*__COMET_SIMULATOR__*/
 	}
 
 	/*
@@ -593,8 +596,6 @@ extern "C"
 	{
 		HANDLER_PROLOGUE();
 		uint_xlen_t this_cause = csr_read_mcause();
-		/*clean up */
-		// csr_write_mcause(0);
 		if (this_cause & MCAUSE_INTERRUPT_BIT_MASK)
 		{
 			/*interrupt*/
@@ -604,11 +605,8 @@ extern "C"
 			{
 			case RISCV_INT_MTI_CODE:
 				// Timer exception, keep up the one second tick.
-				mtimer_set_raw_time_cmp(MTIMER_MSEC_TO_CLOCKS(1));
-				CPU_SR_ALLOC(); /* Allocate storage for CPU status register             */
-				CPU_CRITICAL_ENTER();
+				mtimer_set_raw_time_cmp(MTIMER_SECONDS_TO_CLOCKS(OS_CFG_TICK_RATE_HZ));
 				OSIntEnter(); /* Tell uC/OS-III that we are starting an ISR           */
-				CPU_CRITICAL_EXIT();
 				OSTimeTick(); /* Call uC/OS-III's OSTimeTick()                        */
 				OSIntExit();  /* Tell uC/OS-III that we are leaving the ISR           */
 				break;
@@ -623,16 +621,15 @@ extern "C"
 				/*              h) Retrieve the address at which exception happened*/
 				/*              i) Restore x1-x31 from new process stack; x0 is always zero.*/
 				/*              j) Perform exception return which will restore remaining context.*/
-
-				// csr_clr_bits_mstatus(MSTATUS_MIE_BIT_MASK);
-				csr_clr_bits_mip(0x08);
-				asm volatile("sw sp,%0" : : "m"(OSTCBCurPtr->StkPtr));
+				/* mip clear */
+				asm volatile("li t0, %0" : : "i"(0));
+				asm volatile("la t1, 0x50"); // address of mip
+				asm volatile("sw t0,0(t1)");
+				asm volatile("sw sp,%0" : "=m"(OSTCBCurPtr->StkPtr) : : "sp");
 				OSTaskSwHook();
 				OSPrioCur = OSPrioHighRdy;
 				OSTCBCurPtr = OSTCBHighRdyPtr;
-				asm volatile("lw sp,%0" : : "m"(OSTCBHighRdyPtr->StkPtr));
-				// Global interrupt enable
-				// csr_set_bits_mstatus(MSTATUS_MIE_BIT_MASK);
+				asm volatile("lw sp,%0" : : "m"(OSTCBHighRdyPtr->StkPtr) : "memory");
 				break;
 			default:
 				PRINT_CAUSE_ON_REGS(this_cause);
@@ -650,8 +647,11 @@ extern "C"
 		To enter user mode on the HiFive Rev B, make sure you set MPP = 0, set UIE = 0, MPIE = 1,
 		 setup at least one PMP, then MRET. User mode has NO PERMISSIONS by default therefore you
 		 must setup a PMP entry before the MRET instruction or y*/
+		/*clean up */
+		csr_write_mcause(0);
 		HANDLER_EPILOGUE();
-		asm volatile("mret");
+		asm volatile("mret" : : : "cc");
+		asm volatile(".align 8");
 	}
 #pragma GCC pop_options
 

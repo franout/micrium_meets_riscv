@@ -48,7 +48,7 @@
 
 
 #define APP_CFG_TASK_MISC_PRIO						14u
-#define  APP_CFG_TASK_MATH_PRIO						50u
+#define  APP_CFG_TASK_MATH_PRIO						25u
 
 /*
  *********************************************************************************************************
@@ -58,8 +58,8 @@
 
 #define APP_CFG_TASK_START_STK_SIZE					256u
 
-#define MATH_OPS_LENGTH 							256u /*size of data structure in math task*/
-#define APP_CFG_TASK_MATH_STK_SIZE					(MATH_OPS_LENGTH*4)+512u
+#define MATH_OPS_LENGTH 							32u /*size of data structure in math task*/
+#define APP_CFG_TASK_MATH_STK_SIZE					256u
 
 /*
  *********************************************************************************************************

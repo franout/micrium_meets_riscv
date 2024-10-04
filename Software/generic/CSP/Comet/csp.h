@@ -85,7 +85,7 @@
 
 void BSP_Init(void);
 void BSP_IntInit(void);
-void BSP_OS_Tick_Init(uint64_t value);
+void BSP_OS_Tick_Init();
 void BSP_OS_TickEnable(void);
 void BSP_OS_TickDisable(void);
 

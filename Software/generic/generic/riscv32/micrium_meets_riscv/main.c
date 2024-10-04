@@ -13,7 +13,21 @@
 #include "includes.h"
 #include "app_cfg.h"
 
-
+#define PRINT_ERROR_SYNDROME(syndrome)  																				\
+	do                                                                                                                  \
+	{                                                                                                                  	\
+		for (int i = 0; i < 10; i++)                                                                                   	\
+		{                                                                                                              	\
+			asm volatile("li x6,0xc1a0");                                                                              	\
+			asm volatile("li x7,0xc1a0");                                                                              	\
+			asm volatile("li x8,0xc1a0");                                                                              	\
+			asm volatile("mv x9,%0" : : "r"(syndrome));                                                                 \
+			asm volatile("mv x10,%0" : : "r"(syndrome));                                                                \
+			asm volatile("li x11,0xc1a0");                                                                             	\
+			asm volatile("li x12,0xc1a0");                                                                             	\
+		}                                                                                                              	\
+		exit(syndrome);																										\
+	} while (0)
 /*
  *********************************************************************************************************
  *                                       APPLICATION GLOBALS
@@ -47,12 +61,13 @@ int main(void) {
 	CPU_Init();
 	Mem_Init(); /*Initialize the memory heap pool */
 	Math_Init(); /*Initialize the math random seed functions */
-	CPU_IntEn();/*enable interrupts*/
 
 	OSInit(&err); /* Initialize "uC/OS-III, The Real-Time Kernel"*/
 	if (err != OS_ERR_NONE) {
-		while (DEF_TRUE)
-			;
+		while (DEF_TRUE){
+			PRINT_ERROR_SYNDROME(err);
+		}
+			
 	}
 
 #if (OS_CFG_DBG_EN > 0u) /*for checking the OS configuration*/
@@ -70,8 +85,9 @@ int main(void) {
 			(OS_ERR*) &err
 	);
 	if (err != OS_ERR_NONE) {
-		while (DEF_TRUE)
-			;
+		while (DEF_TRUE){
+			PRINT_ERROR_SYNDROME(err);
+		}
 	}
 
 #if (OS_TASK_NAME_EN > 0u)
@@ -82,8 +98,9 @@ int main(void) {
 	 *
 	 * */
 	OSStart(&err); /* Start the multitasking */
-	while (DEF_TRUE)
-		;
+	while (DEF_TRUE){
+			PRINT_ERROR_SYNDROME(err);
+		}
 	return err;
 
 
@@ -108,14 +125,14 @@ int main(void) {
  */
 
 static void App_TaskStart(void *p_arg) {
-	OS_ERR os_err;
+	OS_ERR os_err = OS_ERR_NONE;
 	volatile CLK_TS_SEC ts_sec = 0; /* avoiding optimizations*/
 	volatile OS_CPU_USAGE cpu_usage = 0; /*avoiding optimizations*/
 	volatile OS_CPU_USAGE cpu_usage_pk = 0; /*avoiding optimizations*/
 	CLK_DATE_TIME date_time;
-	CPU_BOOLEAN valid;
+	CPU_BOOLEAN valid = DEF_OK;
 	CPU_CHAR str[CLK_STR_FMT_YYYY_MM_DD_HH_MM_SS_UTC_LEN + 1];
-	CLK_ERR err;
+	CLK_ERR err = CLK_ERR_NONE;
 
 	(void) p_arg; /* See Note #1                                          */
 
@@ -124,8 +141,9 @@ static void App_TaskStart(void *p_arg) {
 
 	Clk_Init(&err);
 	if (err != CLK_ERR_NONE) {
-		while (DEF_TRUE)
-			;
+		while (DEF_TRUE){
+			PRINT_ERROR_SYNDROME(err);
+		}
 	}
 
 	/* Set the initial time for sw maintained timestamp
@@ -136,13 +154,15 @@ static void App_TaskStart(void *p_arg) {
 	valid = Clk_DateTimeMake(&date_time, 2021, 01, 29, 11, 11, 11,
 	CLK_CFG_TZ_DFLT_SEC);
 	if (valid != DEF_OK) {
-		while (DEF_TRUE)
-			;
+		while (DEF_TRUE){
+			PRINT_ERROR_SYNDROME(err);
+		}
 	}
 	valid = Clk_SetDateTime(&date_time);
 	if (valid != DEF_OK) {
-		while (DEF_TRUE)
-			;
+		while (DEF_TRUE){
+			PRINT_ERROR_SYNDROME(err);
+		}
 	}
 
 
@@ -156,8 +176,9 @@ static void App_TaskStart(void *p_arg) {
 	App_TaskCreate();/* Create Application tasks                             */
 
 	/* Enable the tick timer and interrupt  */
-	BSP_OS_Tick_Init(1);
+	BSP_OS_Tick_Init(); 
 	BSP_OS_TickEnable(); 
+	CPU_IntEn();/*enable interrupts*/
 
 	while (DEF_TRUE) {
 #if OS_CFG_STAT_TASK_EN > 0u
@@ -169,21 +190,23 @@ static void App_TaskStart(void *p_arg) {
 		/*get date time data structure*/
 		valid = Clk_GetDateTime(&date_time);
 		if (valid != DEF_OK) {
-
-			while (DEF_TRUE)
-				;
+			while (DEF_TRUE){
+			PRINT_ERROR_SYNDROME(err);
+		}	
 		}
 		/*printing functions for timestamp*/
 		valid = Clk_DateTimeToStr(&date_time,
 		CLK_STR_FMT_YYYY_MM_DD_HH_MM_SS_UTC, str,
 		CLK_STR_FMT_YYYY_MM_DD_HH_MM_SS_UTC_LEN + 1);
 		if (valid != DEF_OK) {
-			while (DEF_TRUE)
-				;
+			while (DEF_TRUE){
+			PRINT_ERROR_SYNDROME(err);
+			}
 		}
 		/* getting timestamp */
 		ts_sec = Clk_GetTS(); //or Clk_DateTimeToTS(&ts_sec, &date_time)
 
+#if OS_CFG_STAT_TASK_EN > 0u
 		/*getting cpu usage in percentage
 		 *
 		 * CPU_utilization= 100- (100*OSStatTaskCtr)/(OSStatCtrMax)
@@ -193,8 +216,8 @@ static void App_TaskStart(void *p_arg) {
 		(OS_CPU_USAGE) cpu_usage;
 		cpu_usage_pk = OSStatTaskCPUUsageMax;
 		(OS_CPU_USAGE) cpu_usage_pk;
-
-		OSTimeDlyHMSM(0, 0, 0, 10, OS_OPT_TIME_TIMEOUT, &os_err);
+#endif /*OS_CFG_STAT_TASK_EN*/
+		OSTimeDlyHMSM(0, 0, 0, 2, OS_OPT_TIME_TIMEOUT, &os_err);
 
 	}
 
@@ -236,10 +259,13 @@ static void App_ObjCreate(void) {
  */
 
 static void App_TaskCreate(void) {
-	OS_ERR err;
+	OS_ERR err =  OS_ERR_NONE;
+	#if (APP_TASK_MATH>0u)
 	APP_Math_Init(&err);
 	if (err != OS_ERR_NONE) {
-		while (DEF_TRUE)
-			;
+		while (DEF_TRUE){
+			PRINT_ERROR_SYNDROME(err);
+		}
 	}
+	#endif /*APP_TASK_MATH*/
 }

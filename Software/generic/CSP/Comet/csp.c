@@ -109,13 +109,13 @@ void BSP_IntInit(void)
  *********************************************************************************************************
  */
 
-void BSP_OS_Tick_Init(uint64_t value)
+void BSP_OS_Tick_Init()
 {
   /*disable interrupt*/
   csr_clr_bits_mstatus(MSTATUS_MIE_BIT_MASK);
   csr_write_mie(0);
   /*setup */
-  mtimer_set_raw_time_cmp(MTIMER_MSEC_TO_CLOCKS(value));
+  mtimer_set_raw_time_cmp(MTIMER_SECONDS_TO_CLOCKS(OS_CFG_TICK_RATE_HZ));
   // Global interrupt enable
   csr_set_bits_mstatus(MSTATUS_MIE_BIT_MASK);
 }

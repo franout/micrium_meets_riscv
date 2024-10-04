@@ -208,18 +208,7 @@ SECTIONS
     PROVIDE( segment_data_target_start = ADDR(.data) );
     PROVIDE( segment_data_target_end = ADDR(.tdata) + SIZEOF(.tdata) );
 
-    .tbss : ALIGN(8) {
-	*(.tbss .tbss.* .gnu.linkonce.tb.*)
-	*(.tcommon .tcommon.*)
-	PROVIDE( __tls_end = . );
-    } >romram AT>romram :romram
-    PROVIDE( __tbss_size = SIZEOF(.tbss) );
-    PROVIDE( __tls_size = __tls_end - __tls_base );
-
-    .tbss_space : ALIGN(8) {
-	. = . + __tbss_size;
-    } >romram :romram
-
+    
     .bss (NOLOAD): ALIGN(8) {
         PROVIDE( __bss_start = .);
         *(.sbss*)
@@ -231,9 +220,9 @@ SECTIONS
         PROVIDE( _end = . );
     } >romram :romram
 
-    PROVIDE( segment_tbss_source_start = LOADADDR(.tbss) );
-    PROVIDE( segment_tbss_target_start = ADDR(.tbss) );
-    PROVIDE( segment_tbss_target_end = ADDR(.bss) + SIZEOF(.bss) );
+    PROVIDE( segment_bss_source_start = LOADADDR(.bss) );
+    PROVIDE( segment_bss_target_start = ADDR(.bss) );
+    PROVIDE( segment_bss_target_end = ADDR(.bss) + SIZEOF(.bss) );
  
     .stack (NOLOAD) : ALIGN(16) {
         

@@ -17,17 +17,11 @@
 
 #ifndef MTIME_FREQ_HZ
 // fake Timer  board
-#define MTIME_FREQ_HZ OS_CFG_TICK_RATE_HZ
+#define MTIME_FREQ_HZ 10000000 /*a magic number*/
 #endif
 
 #define MTIMER_SECONDS_TO_CLOCKS(SEC)           \
-    ((uint64_t)(((SEC)*(MTIME_FREQ_HZ))))
-
-#define MTIMER_MSEC_TO_CLOCKS(MSEC)           \
-    ((uint64_t)(((MSEC)*(MTIME_FREQ_HZ))/1000))
-
-#define MTIMER_USEC_TO_CLOCKS(USEC)           \
-    ((uint64_t)(((USEC)*(MTIME_FREQ_HZ))/1000000))
+    ((uint64_t)(((MTIME_FREQ_HZ)/(SEC))-1))
 
 /** Set the raw time compare point in system timer clocks.
  * @param clock_offset Time relative to current mtime when 

@@ -53,6 +53,8 @@
 
     .equ  RISCV_MIE_MSIE,            0x08            # M Soft Interrupt bit
 
+    .equ  RISCV_MIE_MTIE,            0x80
+
     .equ  RISCV_MIP_MSIP,            0x08            # M Soft Interrupt bit
 
 
@@ -75,7 +77,7 @@
 #              e) Enable interrupts (tasks will run with interrupts enabled).
 #              f) Switch to highest priority task.
 #********************************************************************************************************
-
+.align 8
 OSStartHighRdy:
 # Disable interrupts
     li     t0, RISCV_MSTATUS_MIE
@@ -128,18 +130,27 @@ OSStartHighRdy:
     lw x30, 28 * 4(sp)    
     lw x31, 29 * 4(sp)    
 
-# Use register t6 to jump to HIGHEST priority
-    lw     t6, 31 * 4(sp)
+# Use register x31 to jump to HIGHEST priority
+    lw     x31, 31 * 4(sp)
 
 # Compensate for the stack pointer
     addi   sp, sp, 32 * 4
-
+# Clear pending interrupt for timer 
+    
+    li     t0, 0
+    csrrs  zero, mie, t0
+    # # for Comet simulator  
+    li     t0, 0
+    la t1, 0x50 # address of mip 
+    sw t0,0(t1)
 # Enable global interrupts
     li     t0, RISCV_MSTATUS_MIE
     csrrs  zero, mstatus, t0
 
+    li     t0, RISCV_MIE_MSIE
+    csrrs  zero, mie, t0
 # Jump to HIGHEST priority task.
-    jalr   x0, t6, 0
+    jalr   x0, x31, 0
 
 
 #********************************************************************************************************
@@ -153,45 +164,21 @@ OSStartHighRdy:
 #              the result of an interrupt.  This function triggers a synchronous software interrupt by
 #              writing into the MSIP register
 #********************************************************************************************************
-
+.align 8
 OSCtxSw:
 OSIntCtxSw:
-# MIE_MSIE -- enable software interrupt bit
-    li     t0, RISCV_MIE_MSIE
-    csrrs  zero, mie, t0
 # This will trigger a synchronous software interrupt; PRCI->MSIP[0] = 0x01;
     li     t0, RISCV_MIP_MSIP
-    li     t1, 0x1
-    csrrs  t1, mip, t0 
+    csrrs  zero, mip, t0 
+    # # MIE_MSIE -- enable software interrupt bit
+    li     t0, RISCV_MIE_MSIE
+    csrrs  zero, mie, t0
+    # # for Comet simulator  
+    la t1, 0x50 # address of mip 
+    sw t0,0(t1)
     ret
 
-
-#********************************************************************************************************
-#                                   void _SWITCH_CONTEXT (void)
-#
-# Note(s) : 1) This function is defined with weak linking in 'riscv_hal_stubs.c' so that it can be
-#              overridden by the kernel port with same prototype.
-#
-#           2) Pseudo-code is:
-#              a) Disable global interrupts.
-#              b) Clear soft interrupt for hart0.
-#              c) Save the process SP in its TCB, OSTCBCurPtr->StkPtr = SP;
-#              d) Call OSTaskSwHook();
-#              e) Get current high priority, OSPrioCur = OSPrioHighRdy;
-#              f) Get current ready thread TCB, OSTCBCurPtr = OSTCBHighRdyPtr;
-#              g) Get new process SP from TCB, SP = OSTCBHighRdyPtr->StkPtr;
-#              h) Retrieve the address at which exception happened
-#              i) Restore x1-x31 from new process stack; x0 is always zero.
-#              j) Perform exception return which will restore remaining context.
-#
-#           3) On entry into Software_IRQHandler:
-#              a) The initial register context save is being done by 'entry.S'
-#              b) Stack pointer was passed by 'entry.s' in register a2.
-#              c) OSTCBCurPtr      points to the OS_TCB of the task to suspend
-#                 OSTCBHighRdyPtr  points to the OS_TCB of the task to resume
-#********************************************************************************************************
-    
-
+.align 8
 #********************************************************************************************************
 #                                             MODULE END
 #*********************************************************************************************************

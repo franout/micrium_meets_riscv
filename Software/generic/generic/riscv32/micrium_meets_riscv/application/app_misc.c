@@ -50,7 +50,7 @@ void APP_Task_math(void *p_arg) {
 
 
 		/*delay*/
-		OSTimeDlyHMSM(0, 0, 0, 50, OS_OPT_TIME_TIMEOUT, &err);
+		OSTimeDlyHMSM(0, 0, 0, 3, OS_OPT_TIME_TIMEOUT, &err);
 
 	}
 	return;
